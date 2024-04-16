@@ -67,7 +67,7 @@ userSchema.methods.generateAccessToken = function () {
       fullname: this.fullname,
     },
     process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: ACCESS_TOKEN_EXPIRES }
+    { expiresIn: process.env.ACCESS_TOKEN_EXPIRES }
   );
 };
 userSchema.methods.generateRefreshToken = function () {
@@ -79,7 +79,7 @@ userSchema.methods.generateRefreshToken = function () {
       fullname: this.fullname,
     },
     process.env.REFRESH_TOKEN_SECRET,
-    { expiresIn: REFREASH_TOKEN_EXPIRES }
+    { expiresIn: process.env.REFREASH_TOKEN_EXPIRES }
   );
 };
 export const User = mongoose.model("User", userSchema);
