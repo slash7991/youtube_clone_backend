@@ -3,7 +3,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
-
+import jwt from "jsonwebtoken";
 const generateAccessTokenAndRefreshToken = async (userId) => {
   try {
     const user = await User.findById(userId);
@@ -165,4 +165,54 @@ const logoutUser = asyncHandler(async (req, res) => {
     .clearCookie("refreshToken", option)
     .json(new ApiResponse(200, {}, "logout successful"));
 });
-export { registerUser, loginUser, logoutUser };
+
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  try {
+    const incomingRefreashToken =
+      req.cookies?.refreshToken || req.body?.refreshToken;
+
+    if (!incomingRefreashToken) {
+      throw new ApiError(401, "refresh token is required");
+    }
+
+    const decodedToken = jwt.verify(
+      incomingRefreashToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+
+    if (!decodedToken) {
+      throw new ApiError(401, "invalid refresh token");
+    }
+    const user = await User.findById(decodedToken?._id);
+
+    if (!user) {
+      throw new ApiError(401, "invalid refresh token");
+    }
+
+    if (incomingRefreashToken !== user?.refreshToken) {
+      throw new ApiError(401, "invalid refresh token");
+    }
+    const { accesstoken, newRefreashToken } =
+      await generateAccessTokenAndRefreshToken(user?._id);
+
+    const option = {
+      httpOnly: true,
+      secure: true,
+    };
+
+    return res
+      .status(200)
+      .cookie("accessToken", accesstoken, option)
+      .cookie("refreshToken", newRefreashToken, option)
+      .json(
+        new ApiResponse(
+          200,
+          { accesstoken, refreshToken: newRefreashToken },
+          "access token refreshed successfully"
+        )
+      );
+  } catch (error) {
+    throw new ApiError(401, error?.message || "invalid refresh token");
+  }
+});
+export { registerUser, loginUser, logoutUser, refreshAccessToken };
