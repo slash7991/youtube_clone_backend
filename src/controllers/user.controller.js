@@ -269,7 +269,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
 });
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
-  const { avatar } = req.file;
+  const avatar = req.file?.path;
   if (!avatar) {
     throw new ApiError(400, "avatar is required");
   }
@@ -293,6 +293,31 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
   res.status(200).json(200, { user }, "avatar updated successfully");
 });
+const updateUserCoverImage = asyncHandler(async (req, res) => {
+  const coverImage = req.file?.path;
+  if (!coverImage) {
+    throw new ApiError(400, "avatar is required");
+  }
+
+  if (!coverImage) {
+    throw new ApiError(400, "avatar is required");
+  }
+  const updatedCoverImage = await uploadOnCloudinary(coverImage);
+  if (!updatedCoverImage) {
+    throw new ApiError(500, "unable to upload the image ");
+  }
+  const user = await User.findByIdAndUpdate(
+    req.body?._id,
+    {
+      $set: {
+        coverImage: updatedCoverImage,
+      },
+    },
+    { new: true }
+  ).select("-password -refreshToken");
+
+  res.status(200).json(200, { user }, "cover image updated successfully");
+});
 export {
   registerUser,
   loginUser,
@@ -301,4 +326,6 @@ export {
   changePassword,
   getCurrentUser,
   updateAccountDetails,
+  updateUserAvatar,
+  updateUserCoverImage,
 };
